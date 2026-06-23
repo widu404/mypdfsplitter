@@ -1,7 +1,31 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=false --import-alias \"@/*\" --use-npm --turbopack=false)"
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=false --import-alias \"@/*\" --use-npm --turbopack=false)",
+      "Bash(ls -la \"C:\\\\Users\\\\Visitha\\\\package-lock.json\" 2>&1; echo \"---\"; cat \"c:\\\\Users\\\\Visitha\\\\Documents\\\\mypdfsplitter\\\\next.config.ts\")",
+      "Read(//c/Users/Visitha/**)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(node \"C:\\\\Users\\\\Visitha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Visitha-Documents-mypdfsplitter\\\\2bba8eb7-36f7-4fae-8127-ef132e4b0fae\\\\scratchpad\\\\make-test-pdf.mjs\" \"C:\\\\Users\\\\Visitha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Visitha-Documents-mypdfsplitter\\\\2bba8eb7-36f7-4fae-8127-ef132e4b0fae\\\\scratchpad\\\\test.pdf\")",
+      "Bash(node scripts/make-test-pdf.mjs \"C:\\\\Users\\\\Visitha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Visitha-Documents-mypdfsplitter\\\\2bba8eb7-36f7-4fae-8127-ef132e4b0fae\\\\scratchpad\\\\test.pdf\")",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:3000 >/dev/null; do sleep 1; done')",
+      "Bash(node -e \"console.log\\(require.resolve\\('playwright'\\)\\)\")",
+      "Bash(npm init *)",
+      "Bash(mkdir -p 'C:\\\\Users\\\\Visitha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Visitha-Documents-mypdfsplitter\\\\2bba8eb7-36f7-4fae-8127-ef132e4b0fae\\\\scratchpad/downloads')",
+      "Bash(node test-app.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(node scripts/verify-downloads.mjs \"C:\\\\Users\\\\Visitha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Visitha-Documents-mypdfsplitter\\\\2bba8eb7-36f7-4fae-8127-ef132e4b0fae\\\\scratchpad\\\\downloads\")",
+      "Bash(node -e \"console.log\\(require\\('pdfjs-dist/package.json'\\).version\\)\")",
+      "Bash(grep -E \"^[A-Za-z].*\\\\.\\(mjs|ts|tsx|js\\)$|^✖|errors|^c:\")",
+      "Bash(xargs grep -ln \"destroy\")",
+      "Bash(awk '/^export class PDFDocumentProxy/,/^export class /{print NR\": \"$0}' node_modules/pdfjs-dist/types/src/display/api.d.ts)",
+      "Bash(curl -sf http://localhost:3000 -o /dev/null -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(curl -sf http://localhost:3000/pdf.worker.min.mjs -o /dev/null -w \"worker file: HTTP %{http_code}\\\\n\")",
+      "Bash(node test-app-v2.mjs)",
+      "Bash(node \"C:\\\\Users\\\\Visitha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Visitha-Documents-mypdfsplitter\\\\2bba8eb7-36f7-4fae-8127-ef132e4b0fae\\\\scratchpad\\\\verify-offset-content.mjs\")",
+      "Bash(node verify-offset-content.mjs)",
+      "Bash(tasklist //FI \"PID eq 29168\")",
+      "Bash(taskkill //PID 29168 //F)"
     ]
   }
 }
