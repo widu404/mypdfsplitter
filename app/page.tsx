@@ -20,7 +20,7 @@ export default function Home() {
       <div className="mb-8 flex max-w-2xl flex-col items-center text-center">
         <h1 className="text-3xl font-bold text-gray-900">PDF Splitter</h1>
         <p className="mt-2 text-sm text-gray-500">
-          Split your PDF into multiple files. Everything runs locally — your
+          Split your PDF into multiple files. Everything runs locally, your
           file never leaves your device.
         </p>
       </div>

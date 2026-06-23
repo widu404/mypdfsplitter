@@ -25,7 +25,12 @@
       "Bash(node \"C:\\\\Users\\\\Visitha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Visitha-Documents-mypdfsplitter\\\\2bba8eb7-36f7-4fae-8127-ef132e4b0fae\\\\scratchpad\\\\verify-offset-content.mjs\")",
       "Bash(node verify-offset-content.mjs)",
       "Bash(tasklist //FI \"PID eq 29168\")",
-      "Bash(taskkill //PID 29168 //F)"
+      "Bash(taskkill //PID 29168 //F)",
+      "Bash(node test-dark-mode.mjs)",
+      "Bash(tasklist //FI \"PID eq 17548\")",
+      "Bash(taskkill //PID 17548 //F)",
+      "Bash(node test-renumber.mjs)",
+      "Bash(taskkill //PID 22312 //F)"
     ]
   }
 }

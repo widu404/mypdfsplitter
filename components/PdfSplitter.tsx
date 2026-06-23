@@ -104,10 +104,26 @@ export default function PdfSplitter() {
     nextSplitId.current += 1;
     return {
       id: nextSplitId.current,
-      name: `split-${nextSplitId.current}`,
+      // Placeholder — renumberDefaultNames() assigns the real position-based name.
+      name: "split-0",
       startPage: defaultStart,
       endPage: defaultEnd,
     };
+  }
+
+  // A split's name still counts as "default" (safe to renumber) as long as
+  // the user hasn't typed a custom one over it.
+  function isDefaultName(name: string): boolean {
+    return /^split-\d+$/.test(name);
+  }
+
+  // Keeps default-named splits numbered by their position — 1st is split-1,
+  // 2nd is split-2, etc. — even after splits are added or removed. Splits the
+  // user has renamed are left untouched.
+  function renumberDefaultNames(items: SplitItem[]): SplitItem[] {
+    return items.map((item, index) =>
+      isDefaultName(item.name) ? { ...item, name: `split-${index + 1}` } : item
+    );
   }
 
   // Resolves the offset for live UI hints; invalid/empty input reads as 0
@@ -149,7 +165,7 @@ export default function PdfSplitter() {
       setPageCount(totalPages);
       setIsLargeFile(file.size > LARGE_FILE_BYTES);
       setFrontMatterOffset("0");
-      setSplits([makeSplit("1", String(totalPages))]);
+      setSplits(renumberDefaultNames([makeSplit("1", String(totalPages))]));
       setThumbnails([]);
       setPdfjsDoc(null);
       setPdfjsLoadingTask(null);
@@ -212,11 +228,11 @@ export default function PdfSplitter() {
   }
 
   function addSplit() {
-    setSplits((prev) => [...prev, makeSplit("1", String(pageCount))]);
+    setSplits((prev) => renumberDefaultNames([...prev, makeSplit("1", String(pageCount))]));
   }
 
   function removeSplit(id: number) {
-    setSplits((prev) => prev.filter((s) => s.id !== id));
+    setSplits((prev) => renumberDefaultNames(prev.filter((s) => s.id !== id)));
   }
 
   function updateSplit(id: number, field: keyof Omit<SplitItem, "id">, value: string) {
@@ -392,7 +408,8 @@ export default function PdfSplitter() {
               min={0}
               value={frontMatterOffset}
               onChange={(e) => setFrontMatterOffset(e.target.value)}
-              className="w-16 rounded-lg border border-gray-200 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none"
+              onFocus={(e) => e.target.select()}
+              className="w-16 rounded-lg border border-gray-200 px-2 py-1 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
             />
             <div className="relative">
               <button
@@ -430,8 +447,9 @@ export default function PdfSplitter() {
                     type="text"
                     value={split.name}
                     onChange={(e) => updateSplit(split.id, "name", e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     placeholder="File name"
-                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
                   />
                   <button
                     type="button"
@@ -451,8 +469,9 @@ export default function PdfSplitter() {
                         min={1}
                         value={split.startPage}
                         onChange={(e) => updateSplit(split.id, "startPage", e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         placeholder="Start"
-                        className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                        className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
                       />
                       <button
                         type="button"
@@ -478,8 +497,9 @@ export default function PdfSplitter() {
                         min={1}
                         value={split.endPage}
                         onChange={(e) => updateSplit(split.id, "endPage", e.target.value)}
+                        onFocus={(e) => e.target.select()}
                         placeholder="End"
-                        className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                        className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
                       />
                       <button
                         type="button"
