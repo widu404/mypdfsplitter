@@ -1,5 +1,6 @@
 "use client";
 
+import JSZip from "jszip";
 import { PDFDocument } from "pdf-lib";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import { useEffect, useRef, useState } from "react";
@@ -21,18 +22,18 @@ interface PreviewRequest {
   physicalPage: number;
 }
 
-const DOWNLOAD_DELAY_MS = 200;
 const THUMBNAIL_COUNT = 5;
 const THUMBNAIL_WIDTH = 100;
 const LARGE_FILE_BYTES = 100 * 1024 * 1024;
 
-function sanitizeFileName(name: string): string {
+function sanitizeFileName(name: string, extension: "pdf" | "zip" = "pdf"): string {
   const cleaned = name.trim().replace(/[\\/:*?"<>|]/g, "-");
-  return cleaned.endsWith(".pdf") ? cleaned : `${cleaned}.pdf`;
+  const suffix = `.${extension}`;
+  return cleaned.toLowerCase().endsWith(suffix) ? cleaned : `${cleaned}${suffix}`;
 }
 
-function downloadBytes(bytes: Uint8Array, fileName: string) {
-  const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
+function downloadBytes(bytes: Uint8Array, fileName: string, mimeType: string) {
+  const blob = new Blob([new Uint8Array(bytes)], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -297,9 +298,9 @@ export default function PdfSplitter() {
     setIsProcessing(true);
     try {
       const sourceDoc = await PDFDocument.load(fileBytes);
+      const generated: { fileName: string; bytes: Uint8Array }[] = [];
 
-      for (let i = 0; i < splits.length; i++) {
-        const split = splits[i];
+      for (const split of splits) {
         const start = Number(split.startPage) + offset;
         const end = Number(split.endPage) + offset;
 
@@ -314,16 +315,24 @@ export default function PdfSplitter() {
         copiedPages.forEach((page) => newDoc.addPage(page));
 
         const bytes = await newDoc.save();
-        downloadBytes(bytes, sanitizeFileName(split.name));
-
-        if (i < splits.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, DOWNLOAD_DELAY_MS));
-        }
+        generated.push({ fileName: sanitizeFileName(split.name), bytes });
       }
 
-      setSuccessMessage(
-        `Done! Downloaded ${splits.length} file${splits.length === 1 ? "" : "s"}.`
-      );
+      if (generated.length === 1) {
+        downloadBytes(generated[0].bytes, generated[0].fileName, "application/pdf");
+        setSuccessMessage("Done! Downloaded 1 file.");
+      } else {
+        const zip = new JSZip();
+        generated.forEach(({ fileName, bytes }) => zip.file(fileName, bytes));
+        const zipBytes = await zip.generateAsync({ type: "uint8array" });
+
+        const zipName = sanitizeFileName(
+          `${(fileName ?? "splits").replace(/\.pdf$/i, "")}-splits`,
+          "zip"
+        );
+        downloadBytes(zipBytes, zipName, "application/zip");
+        setSuccessMessage(`Done! Downloaded ${generated.length} files as a ZIP.`);
+      }
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch {
       setError("Something went wrong while splitting the PDF. Please try again.");

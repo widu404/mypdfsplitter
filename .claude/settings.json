@@ -30,7 +30,11 @@
       "Bash(tasklist //FI \"PID eq 17548\")",
       "Bash(taskkill //PID 17548 //F)",
       "Bash(node test-renumber.mjs)",
-      "Bash(taskkill //PID 22312 //F)"
+      "Bash(taskkill //PID 22312 //F)",
+      "Bash(node -e \"console.log\\(require\\('jszip/package.json'\\).types || require\\('jszip/package.json'\\).typings || 'no types field'\\)\")",
+      "Bash(node test-zip.mjs)",
+      "Bash(node verify-zip.mjs)",
+      "Bash(taskkill //PID 25724 //F)"
     ]
   }
 }
