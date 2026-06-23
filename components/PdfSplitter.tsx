@@ -12,6 +12,9 @@ import pdfjsLib from "@/lib/pdfjs";
 interface SplitItem {
   id: number;
   name: string;
+  // True once the user has typed into the name field directly — locks it
+  // out of auto-naming forever, even if the text still looks like "split-N".
+  isCustomName: boolean;
   startPage: string;
   endPage: string;
 }
@@ -22,9 +25,9 @@ interface PreviewRequest {
   physicalPage: number;
 }
 
-const THUMBNAIL_COUNT = 5;
-const THUMBNAIL_WIDTH = 100;
 const LARGE_FILE_BYTES = 100 * 1024 * 1024;
+const OFFSET_PICKER_PAGE_COUNT = 8;
+const OFFSET_PICKER_THUMB_WIDTH = 90;
 
 function sanitizeFileName(name: string, extension: "pdf" | "zip" = "pdf"): string {
   const cleaned = name.trim().replace(/[\\/:*?"<>|]/g, "-");
@@ -44,14 +47,16 @@ function downloadBytes(bytes: Uint8Array, fileName: string, mimeType: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function renderThumbnails(doc: PDFDocumentProxy): Promise<string[]> {
-  const count = Math.min(THUMBNAIL_COUNT, doc.numPages);
+// Renders the first few pages so the user can click the one where their
+// actual content starts, rather than guessing a front-matter page count.
+async function renderOffsetPickerThumbnails(doc: PDFDocumentProxy): Promise<string[]> {
+  const count = Math.min(OFFSET_PICKER_PAGE_COUNT, doc.numPages);
   const thumbnails: string[] = [];
 
   for (let i = 1; i <= count; i++) {
     const page = await doc.getPage(i);
     const baseViewport = page.getViewport({ scale: 1 });
-    const viewport = page.getViewport({ scale: THUMBNAIL_WIDTH / baseViewport.width });
+    const viewport = page.getViewport({ scale: OFFSET_PICKER_THUMB_WIDTH / baseViewport.width });
 
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
@@ -69,12 +74,12 @@ export default function PdfSplitter() {
   const [fileBytes, setFileBytes] = useState<Uint8Array | null>(null);
   const [isLargeFile, setIsLargeFile] = useState(false);
 
-  // pdfjs-dist instance used for thumbnails and page previews. Kept separate
-  // from `fileBytes` (which pdf-lib needs untouched) because pdfjs may
+  // pdfjs-dist instance used for page previews. Kept separate from
+  // `fileBytes` (which pdf-lib needs untouched) because pdfjs may
   // transfer/detach whatever ArrayBuffer it's handed.
   const [pdfjsDoc, setPdfjsDoc] = useState<PDFDocumentProxy | null>(null);
   const [pdfjsLoadingTask, setPdfjsLoadingTask] = useState<PDFDocumentLoadingTask | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [offsetPickerThumbnails, setOffsetPickerThumbnails] = useState<string[]>([]);
 
   const [frontMatterOffset, setFrontMatterOffset] = useState("0");
   const [showOffsetTooltip, setShowOffsetTooltip] = useState(false);
@@ -89,6 +94,10 @@ export default function PdfSplitter() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const nextSplitId = useRef(0);
+  // Drives default split names (split-1, split-2, ...). Only ever moves
+  // forward: a manual edit like renaming to "split-33" fast-forwards it to
+  // 34 so the next auto-created split continues from there.
+  const nextDefaultNumber = useRef(1);
 
   // Free the pdfjs worker/document whenever it's replaced or on unmount.
   // The loading task (not the resolved proxy) owns `destroy()`, and reading
@@ -103,28 +112,15 @@ export default function PdfSplitter() {
 
   function makeSplit(defaultStart: string, defaultEnd: string): SplitItem {
     nextSplitId.current += 1;
+    const name = `split-${nextDefaultNumber.current}`;
+    nextDefaultNumber.current += 1;
     return {
       id: nextSplitId.current,
-      // Placeholder — renumberDefaultNames() assigns the real position-based name.
-      name: "split-0",
+      name,
+      isCustomName: false,
       startPage: defaultStart,
       endPage: defaultEnd,
     };
-  }
-
-  // A split's name still counts as "default" (safe to renumber) as long as
-  // the user hasn't typed a custom one over it.
-  function isDefaultName(name: string): boolean {
-    return /^split-\d+$/.test(name);
-  }
-
-  // Keeps default-named splits numbered by their position — 1st is split-1,
-  // 2nd is split-2, etc. — even after splits are added or removed. Splits the
-  // user has renamed are left untouched.
-  function renumberDefaultNames(items: SplitItem[]): SplitItem[] {
-    return items.map((item, index) =>
-      isDefaultName(item.name) ? { ...item, name: `split-${index + 1}` } : item
-    );
   }
 
   // Resolves the offset for live UI hints; invalid/empty input reads as 0
@@ -166,10 +162,11 @@ export default function PdfSplitter() {
       setPageCount(totalPages);
       setIsLargeFile(file.size > LARGE_FILE_BYTES);
       setFrontMatterOffset("0");
-      setSplits(renumberDefaultNames([makeSplit("1", String(totalPages))]));
-      setThumbnails([]);
+      nextDefaultNumber.current = 1;
+      setSplits([makeSplit("1", String(totalPages))]);
       setPdfjsDoc(null);
       setPdfjsLoadingTask(null);
+      setOffsetPickerThumbnails([]);
 
       try {
         // Hand pdfjs its own copy — it may transfer the buffer to its worker,
@@ -178,12 +175,12 @@ export default function PdfSplitter() {
         const pdfjsDocument = await loadingTask.promise;
         setPdfjsLoadingTask(loadingTask);
         setPdfjsDoc(pdfjsDocument);
-        setThumbnails(await renderThumbnails(pdfjsDocument));
+        setOffsetPickerThumbnails(await renderOffsetPickerThumbnails(pdfjsDocument));
       } catch {
         // Previews are a nice-to-have; splitting still works without them.
         setPdfjsDoc(null);
         setPdfjsLoadingTask(null);
-        setThumbnails([]);
+        setOffsetPickerThumbnails([]);
       }
     } catch {
       setError("Couldn't read that file. It may be corrupted or password protected.");
@@ -220,8 +217,9 @@ export default function PdfSplitter() {
     setIsLargeFile(false);
     setPdfjsDoc(null);
     setPdfjsLoadingTask(null);
-    setThumbnails([]);
+    setOffsetPickerThumbnails([]);
     setFrontMatterOffset("0");
+    nextDefaultNumber.current = 1;
     setSplits([]);
     setPreviewRequest(null);
     setError(null);
@@ -229,15 +227,39 @@ export default function PdfSplitter() {
   }
 
   function addSplit() {
-    setSplits((prev) => renumberDefaultNames([...prev, makeSplit("1", String(pageCount))]));
+    // Compute the new split (and its ref side effects) once, here, rather
+    // than inside the setSplits updater — React Strict Mode calls updater
+    // functions twice in development to catch impure ones, which would
+    // otherwise double-advance the ref's counters per click.
+    const newSplit = makeSplit("1", String(pageCount));
+    setSplits((prev) => [...prev, newSplit]);
   }
 
   function removeSplit(id: number) {
-    setSplits((prev) => renumberDefaultNames(prev.filter((s) => s.id !== id)));
+    setSplits((prev) => prev.filter((s) => s.id !== id));
   }
 
-  function updateSplit(id: number, field: keyof Omit<SplitItem, "id">, value: string) {
-    setSplits((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+  function updateSplit(id: number, field: "name" | "startPage" | "endPage", value: string) {
+    if (field === "name") {
+      // Any direct edit locks the name as custom — it'll never be
+      // auto-renamed again. If it still looks like "split-N", fast-forward
+      // the counter so the *next* auto-created split continues after it
+      // (e.g. renaming to "split-33" makes the next new split "split-34").
+      const match = /^split-(\d+)$/.exec(value);
+      if (match) {
+        const n = parseInt(match[1], 10) + 1;
+        if (n > nextDefaultNumber.current) nextDefaultNumber.current = n;
+      }
+    }
+
+    setSplits((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        return field === "name"
+          ? { ...s, name: value, isCustomName: true }
+          : { ...s, [field]: value };
+      })
+    );
   }
 
   function openPreview(printedValue: string) {
@@ -390,19 +412,43 @@ export default function PdfSplitter() {
             </p>
           )}
 
-          {thumbnails.length > 0 && (
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              {thumbnails.map((src, i) => (
-                <div key={i} className="flex shrink-0 flex-col items-center gap-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- data URLs from a client-rendered canvas, not a static asset */}
-                  <img
-                    src={src}
-                    alt={`Page ${i + 1} thumbnail`}
-                    className="h-24 rounded border border-gray-200 shadow-sm"
-                  />
-                  <span className="text-[11px] text-gray-400">p. {i + 1}</span>
-                </div>
-              ))}
+          {offsetPickerThumbnails.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-gray-500">
+                Click the page where your real content starts
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {offsetPickerThumbnails.map((src, i) => {
+                  const pageNumber = i + 1;
+                  const isSelected = offsetForDisplay() + 1 === pageNumber;
+                  return (
+                    <button
+                      key={pageNumber}
+                      type="button"
+                      onClick={() => setFrontMatterOffset(String(pageNumber - 1))}
+                      className={`flex shrink-0 flex-col items-center gap-1 rounded-lg border-2 p-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-transparent hover:border-gray-200"
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- data URL from a client-rendered canvas, not a static asset */}
+                      <img
+                        src={src}
+                        alt={`Page ${pageNumber}`}
+                        className="h-24 rounded border border-gray-200 shadow-sm"
+                      />
+                      <span
+                        className={`text-[11px] ${
+                          isSelected ? "font-semibold text-blue-600" : "text-gray-400"
+                        }`}
+                      >
+                        {isSelected ? "Starts here" : `p. ${pageNumber}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -433,7 +479,8 @@ export default function PdfSplitter() {
                 <div className="absolute left-0 top-7 z-10 w-64 rounded-lg bg-gray-800 px-3 py-2 text-xs leading-relaxed text-white shadow-lg">
                   Set this if your PDF has cover pages, author notes, or
                   Roman-numeral pages before the real page 1. Example: if
-                  Chapter 1 starts on the 7th physical page, set this to 6.
+                  Chapter 1 starts on the 7th physical page, set this to 6 —
+                  or just click that page above.
                 </div>
               )}
             </div>
