@@ -41,7 +41,11 @@
       "Bash(netstat -ano)",
       "Bash(taskkill //PID 23932 //F)",
       "Bash(node test-offset-picker.mjs)",
-      "Bash(taskkill //PID 43832 //F)"
+      "Bash(taskkill //PID 43832 //F)",
+      "Bash(cp public/pdf.svg app/icon.svg)",
+      "Bash(rm public/pdf.svg app/favicon.ico)",
+      "Bash(node test-hero-favicon.mjs)",
+      "Bash(taskkill //PID 40976 //F)"
     ]
   }
 }
