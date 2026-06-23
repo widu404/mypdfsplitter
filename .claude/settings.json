@@ -45,7 +45,11 @@
       "Bash(cp public/pdf.svg app/icon.svg)",
       "Bash(rm public/pdf.svg app/favicon.ico)",
       "Bash(node test-hero-favicon.mjs)",
-      "Bash(taskkill //PID 40976 //F)"
+      "Bash(taskkill //PID 40976 //F)",
+      "Bash(node make-icon-circular.mjs)",
+      "Bash(node check-icon.mjs)",
+      "Bash(node check-final.mjs)",
+      "Bash(taskkill //PID 38632 //F)"
     ]
   }
 }

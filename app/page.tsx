@@ -18,7 +18,7 @@ const PdfSplitter = dynamic(() => import("@/components/PdfSplitter"), {
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-1 flex-col items-center bg-gray-100 px-4 py-12 sm:py-20">
+    <div className="flex min-h-screen flex-1 flex-col items-center bg-gray-100 px-4 pt-4 pb-12 sm:pt-6 sm:pb-20">
       <div className="mb-8 flex max-w-2xl flex-col items-center text-center">
         <Image
           src={heroImage}
