@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import Faq from "@/components/Faq";
 import heroImage from "@/public/herodonno.png";
 
 // pdfjs-dist (used by PdfSplitter for thumbnails/previews) touches browser-only
@@ -33,6 +34,7 @@ export default function Home() {
         </p>
       </div>
       <PdfSplitter />
+      <Faq />
     </div>
   );
 }

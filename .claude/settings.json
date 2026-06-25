@@ -49,7 +49,12 @@
       "Bash(node make-icon-circular.mjs)",
       "Bash(node check-icon.mjs)",
       "Bash(node check-final.mjs)",
-      "Bash(taskkill //PID 38632 //F)"
+      "Bash(taskkill //PID 38632 //F)",
+      "Bash(curl -s -i http://localhost:3000/)",
+      "Bash(taskkill //PID 2464 //F)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(node test-faq.mjs)",
+      "Bash(taskkill //PID 27076 //F)"
     ]
   }
 }
